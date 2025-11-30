@@ -7,7 +7,12 @@
 验证SDR色彩准确性。
 
 ## 3. 特性 (Characteristics)
-包含红(Red-1)、绿(Green-1)、蓝(Blue-1)三个色块。目标亮度/色度参考SMPTE-431-2 Table A.1。
+包含12个色块，分为两排：
+- 第一排 (Row 1): Red-1, Green-1, Blue-1, Cyan-1, Magenta-1, Yellow-1 (高饱和度)
+- 第二排 (Row 2): Red-2, Green-2, Blue-2, Cyan-2, Magenta-2, Yellow-2 (次级色/色彩偏移)
+分辨率: 2048 x 1080 (2K) & 4096 x 2160 (4K).
+背景: 纯黑.
+文字: 包含详细的xyY和12-bit XYZ数值。
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试
@@ -23,4 +28,7 @@
 ✅ **已生成 (Generated)**
 
 该素材文件（16-bit XYZ TIFF）已包含在当前目录中。
-文件路径: `Color_Accuracy_Series.tiff`
+
+文件路径: 
+- `Color_Accuracy_Series.tiff`: 分辨率 2048x1080 (DCI 2K)
+- `Color_Accuracy_Series_4K.tiff`: 分辨率 4096x2160 (DCI 4K)
