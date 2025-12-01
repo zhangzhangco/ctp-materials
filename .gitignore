@@ -1,5 +1,6 @@
 # Ignore python scripts
 *.py
+!ctp_compliance_tests/**/*.py
 
 # Ignore src directories
 src/
@@ -16,3 +17,5 @@ __pycache__/
 
 # Ignore logs
 *.log
+ctp_packaging_config/
+

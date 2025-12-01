@@ -1,0 +1,94 @@
+name: Build and Release CTP Tools
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libopenjp2-7-dev libxml-security-c-dev libasdcp-dev
+
+      - name: Build Tools
+        run: |
+          cd ctp_compliance_tests/tools
+          make
+
+      - name: Package Linux Binaries
+        run: |
+          mkdir -p dist/linux
+          cp ctp_compliance_tests/tools/dc-thumbprint dist/linux/
+          cp ctp_compliance_tests/tools/schema-check dist/linux/
+          cp ctp_compliance_tests/tools/kdm-decrypt dist/linux/
+          cp ctp_compliance_tests/tools/j2c-scan dist/linux/
+          cp ctp_compliance_tests/tools/*.py dist/linux/
+          cd dist/linux && tar -czvf ../../dci-ctp-tools-linux.tar.gz .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-binaries
+          path: dci-ctp-tools-linux.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          brew install openssl xerces-c openjpeg xml-security-c asdcplib
+
+      - name: Build Tools
+        run: |
+          cd ctp_compliance_tests/tools
+          # Adjust Makefile for macOS paths if necessary, or rely on standard paths
+          make
+
+      - name: Package macOS Binaries
+        run: |
+          mkdir -p dist/macos
+          cp ctp_compliance_tests/tools/dc-thumbprint dist/macos/
+          cp ctp_compliance_tests/tools/schema-check dist/macos/
+          cp ctp_compliance_tests/tools/kdm-decrypt dist/macos/
+          cp ctp_compliance_tests/tools/j2c-scan dist/macos/
+          cp ctp_compliance_tests/tools/*.py dist/macos/
+          cd dist/macos && tar -czvf ../../dci-ctp-tools-macos.tar.gz .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-binaries
+          path: dci-ctp-tools-macos.tar.gz
+
+  release:
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-binaries
+
+      - name: Download macOS Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: macos-binaries
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dci-ctp-tools-linux.tar.gz
+            dci-ctp-tools-macos.tar.gz
