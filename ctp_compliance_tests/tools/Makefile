@@ -2,8 +2,8 @@
 
 CC = cc
 CXX = c++
-CFLAGS = -Wall -O2
-CXXFLAGS = -Wall -O2
+CFLAGS += -Wall -O2
+CXXFLAGS += -Wall -O2
 
 # Libraries
 LIBS_CRYPTO = -lcrypto

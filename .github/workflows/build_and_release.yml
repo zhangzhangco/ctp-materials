@@ -15,7 +15,18 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libopenjp2-7-dev libxml-security-c-dev libasdcp-dev
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libopenjp2-7-dev libxml-security-c-dev autoconf automake libtool
+
+      - name: Build and Install asdcplib
+        run: |
+          git clone https://github.com/cinecert/asdcplib.git
+          cd asdcplib
+          autoreconf -if
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
 
       - name: Build Tools
         run: |
@@ -60,7 +71,8 @@ jobs:
       - name: Build Tools
         run: |
           cd ctp_compliance_tests/tools
-          # Adjust Makefile for macOS paths if necessary, or rely on standard paths
+          export CFLAGS="-I$(brew --prefix openssl)/include"
+          export LDFLAGS="-L$(brew --prefix openssl)/lib"
           make
 
       - name: Package macOS Binaries
