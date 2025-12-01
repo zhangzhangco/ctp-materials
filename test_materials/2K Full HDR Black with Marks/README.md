@@ -7,7 +7,8 @@
 验证HDR模式下的最小黑电平和非活动区域漏光情况。
 
 ## 3. 特性 (Characteristics)
-全黑画面。所有像素亮度目标为 0 cd/m²。测量范围应在[0.01, 0.032] cd/m²之间。
+
+图像轨迹文件，包含1分钟的2K Full帧，每帧填充像素代码值 (X″=0, Y″=0, Z″=0)，但帧的每个角落都有代码值为 (X″=157, Y″=161, Z″=167) 的配准标记。
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试
@@ -19,7 +20,9 @@
 验证TIFF文件所有像素值为0。
 
 ## 5. 素材状态 (Material Status)
+
 ✅ **已生成 (Generated)**
 
 该素材文件（16-bit XYZ TIFF）已包含在当前目录中。
-文件路径: `2K_Full_HDR_Black_with_Marks.tiff`
+
+文件路径: `2k_full_hdr_black_marks.tiff`

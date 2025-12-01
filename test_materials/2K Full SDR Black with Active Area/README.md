@@ -7,7 +7,7 @@
 验证SDR模式下，非活动区域（Inactive Area）是否发光。Marks用于定位，Active Area用于验证红光溢出。
 
 ## 3. 特性 (Characteristics)
-Image Track File that contains 1 minute of 2K full frames. Each frame consists of a central rectangular area with dimensions (1440x1080) filled with code value (X'=0, Y'=0, Z'=0). 帧的其余部分填充码值(X'=2901, Y'=2171, Z'=100)。 中心矩形区域的四个角上有码值为(X'=122, Y'=128, Z'=125)的对准标记。
+图像轨迹文件，包含1分钟的 2K Full 帧。每帧包含一个尺寸为 (1440x1080) 的中心矩形区域，填充代码值 (X'=0, Y'=0, Z'=0)。 帧的其余部分填充码值(X'=2901, Y'=2171, Z'=100)。 中心矩形区域的四个角上有码值为(X'=122, Y'=128, Z'=125)的对准标记。
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试
