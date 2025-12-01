@@ -22,7 +22,7 @@ jobs:
           wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
           tar -xzvf openjpeg-1.5.2.tar.gz
           cd openjpeg-1.5.2
-          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           make
           sudo make install
           sudo ldconfig
@@ -77,7 +77,7 @@ jobs:
           wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
           tar -xzvf openjpeg-1.5.2.tar.gz
           cd openjpeg-1.5.2
-          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           make
           sudo make install
           # Copy headers required by j2c-scan
