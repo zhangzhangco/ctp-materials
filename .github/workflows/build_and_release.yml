@@ -15,7 +15,21 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libopenjp2-7-dev libxml-security-c-dev autoconf automake libtool
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget
+
+      - name: Build and Install OpenJPEG 1.5
+        run: |
+          wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/openjpeg/openjpeg-1.5.2.tar.gz
+          tar -xzvf openjpeg-1.5.2.tar.gz
+          cd openjpeg-1.5.2
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          # Copy headers required by j2c-scan
+          cp libopenjpeg/openjpeg.h ../ctp_compliance_tests/tools/
+          cp libopenjpeg/j2k.h ../ctp_compliance_tests/tools/
+          cd ..
 
       - name: Build and Install asdcplib
         run: |
@@ -56,7 +70,20 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          brew install openssl xerces-c openjpeg xml-security-c autoconf automake libtool
+          brew install openssl xerces-c xml-security-c autoconf automake libtool wget
+
+      - name: Build and Install OpenJPEG 1.5
+        run: |
+          wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/openjpeg/openjpeg-1.5.2.tar.gz
+          tar -xzvf openjpeg-1.5.2.tar.gz
+          cd openjpeg-1.5.2
+          ./configure
+          make
+          sudo make install
+          # Copy headers required by j2c-scan
+          cp libopenjpeg/openjpeg.h ../ctp_compliance_tests/tools/
+          cp libopenjpeg/j2k.h ../ctp_compliance_tests/tools/
+          cd ..
 
       - name: Build and Install asdcplib
         run: |
@@ -71,8 +98,9 @@ jobs:
       - name: Build Tools
         run: |
           cd ctp_compliance_tests/tools
-          export CFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix xerces-c)/include -I$(brew --prefix openjpeg)/include -I$(brew --prefix xml-security-c)/include"
-          export LDFLAGS="-L$(brew --prefix openssl)/lib -L$(brew --prefix xerces-c)/lib -L$(brew --prefix openjpeg)/lib -L$(brew --prefix xml-security-c)/lib"
+          export CFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix xerces-c)/include -I$(brew --prefix xml-security-c)/include"
+          export CXXFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix xerces-c)/include -I$(brew --prefix xml-security-c)/include"
+          export LDFLAGS="-L$(brew --prefix openssl)/lib -L$(brew --prefix xerces-c)/lib -L$(brew --prefix xml-security-c)/lib"
           make
 
       - name: Package macOS Binaries

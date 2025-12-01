@@ -23,7 +23,7 @@ schema-check: schema-check.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS_XERCES)
 
 j2c-scan: j2c-scan.cpp
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(shell pkg-config --cflags libopenjp2) -o $@ $< $(LIBS_OPENJPEG) $(shell pkg-config --libs libopenjp2)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS_OPENJPEG)
 
 kdm-decrypt: kdm-decrypt.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS_KDM)
