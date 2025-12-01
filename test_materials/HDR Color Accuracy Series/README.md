@@ -7,13 +7,7 @@
 验证HDR色彩准确性。
 
 ## 3. 特性 (Characteristics)
-包含12个色块，分为两排（同SDR布局）。
-目标亮度基于Peak 300 cd/m² (PQ ST.2084) 进行缩放。
-- 第一排 (Row 1): Red-1, Green-1, Blue-1, Cyan-1, Magenta-1, Yellow-1
-- 第二排 (Row 2): Red-2, Green-2, Blue-2, Cyan-2, Magenta-2, Yellow-2
-分辨率: 4096 x 2160 (DCI 4K).
-背景: 纯黑.
-文字: 包含详细的xyY和12-bit PQ XYZ数值。
+HDR Picture Track File containing five seconds (120 frames) of a chart showing all color values for the test in Section 7.5.16. This is followed by 1 minute of each of the 12 color values as a full frame.
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试

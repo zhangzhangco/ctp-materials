@@ -7,7 +7,7 @@
 验证子像素空间重合度（Sub-pixel Spatial Coincidence）及色边伪影。
 
 ## 3. 特性 (Characteristics)
-4096x2160图像，包含单像素宽度的白色垂直和水平线条，背景为黑色。
+包含1分钟4K Flat帧的图像轨迹文件。 Each frame consists of 3 sets of three patches, with the sets stacked vertically and the patches arranged horizontally. 每组包含一个水平线条色块，一个垂直线条色块和一个斜线条色块。 每个色块包含1、2、3和4像素宽的线条，且未进行抗锯齿处理。 线条为D65全屏白，背景为黑色。
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试

@@ -7,7 +7,7 @@
 验证HDR传递函数（PQ/Gamma 2.6 for DCI HDR）。
 
 ## 3. 特性 (Characteristics)
-包含10个梯级，亮度范围从0.50到299.64 cd/m² (Peak 299.6 cd/m²)。
+HDR Picture Track File containing five seconds (120 frames) of a chart showing all gray step values in DCI-HDR Table 7. This is followed by the step values, each as a full frame with a duration of 50 s.
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试

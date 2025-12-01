@@ -7,12 +7,7 @@
 验证SDR色彩准确性。
 
 ## 3. 特性 (Characteristics)
-包含12个色块，分为两排：
-- 第一排 (Row 1): Red-1, Green-1, Blue-1, Cyan-1, Magenta-1, Yellow-1 (高饱和度)
-- 第二排 (Row 2): Red-2, Green-2, Blue-2, Cyan-2, Magenta-2, Yellow-2 (次级色/色彩偏移)
-分辨率: 2048 x 1080 (2K) & 4096 x 2160 (4K).
-背景: 纯黑.
-文字: 包含详细的xyY和12-bit XYZ数值。
+MXF track file containing five seconds (120 frames) of a chart showing all color values for the test in Section 7.5.12. This is followed by 1 minute of each of the 12 color values as a full frame.
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试

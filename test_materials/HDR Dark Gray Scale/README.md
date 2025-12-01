@@ -7,7 +7,7 @@
 验证HDR轮廓（Contouring）表现。
 
 ## 3. 特性 (Characteristics)
-同 DCI HDR Gray Steps。包含10个暗部灰阶梯级。
+HDR Picture Track File containing five seconds (120 frames) of a chart showing all gray step values in Table A.2.293. This is followed by the step values, each as a full frame with a duration of 50 s.
 
 ## 4. 验证方法 (Verification)
 **硬件测量：** 测量每个全屏灰色色块的亮度，计算二阶近似导数。

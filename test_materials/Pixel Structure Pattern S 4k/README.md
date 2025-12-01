@@ -7,12 +7,7 @@ DCI CTP 7.5.3
 本测试图案用于验证显示设备的像素计数和像素结构完整性。
 
 ## 3. 特性 (Characteristics)
-- **分辨率**: 4096x2160 (4K DCI)
-- **图案结构**: 256×135 个 16×16 像素块
-- **颜色序列**: 每个块包含 16 条颜色条带（Brown, Red, Orange, Yellow, Green, Blue, Violet, Gray，重复两次）
-- **二进制索引**: 每个块包含 X/Y 坐标的二进制编码（白色=1，灰色=0）
-- **方向**: S orientation - 垂直扫描方向（从上到下）。彩条竖直排列，左短右长，靠顶对齐，形成向下的指向。
-- **边框**: 1 像素白色边框
+South-oriented pixel structure test pattern featuring 16x16 pixel patterns with binary position indicators. See Section 7.5.3 for description.
 
 ## 4. 验证方法 (Verification)
 ### 基本验证

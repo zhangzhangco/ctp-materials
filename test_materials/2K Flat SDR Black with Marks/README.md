@@ -7,7 +7,7 @@
 验证SDR模式下，非活动区域（Inactive Area）是否发光。Marks用于定位，Active Area用于验证红光溢出。
 
 ## 3. 特性 (Characteristics)
-全黑画面。所有像素亮度目标为 0 cd/m²。测量范围应在[0.01, 0.032] cd/m²之间。
+Image Track File that contains 1 minute of 2K flat frames, each filled with pixels with code value (X'=0, Y'=0, Z'=0), with the exception of registration marks at each corner of the frame that use pixels with code value (X'=122, Y'=128, Z'=125).
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试

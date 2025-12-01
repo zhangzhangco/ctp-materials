@@ -7,7 +7,7 @@
 验证图像缩放伪影（Aliasing, Ringing, Jaggies）。
 
 ## 3. 特性 (Characteristics)
-4096x2160图像，包含Zone Plate同心圆和对角线，用于检测缩放伪影(Aliasing, Ringing)。
+包含10秒图A.2.254所示4K帧的图像轨迹文件，由以下部分组成：(a) 帧左侧，不同角度和颜色的连续1像素线段及一个小灰色方块；(b) 帧右侧，波长为2像素的波带片(Zone Plate)。
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试

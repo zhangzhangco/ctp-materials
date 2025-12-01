@@ -7,7 +7,7 @@
 验证SDR传递函数（Gamma 2.6）和灰阶追踪。
 
 ## 3. 特性 (Characteristics)
-包含10个梯级，亮度范围从0.121到47.999 cd/m² (Peak 48 cd/m²)。
+MXF track file containing five seconds (120 frames) of a chart showing all gray step values in Table A.2.14. This is followed by the step values, each as a full frame with a duration of 50 s.
 
 ## 4. 验证方法 (Verification)
 ### DCI合规性测试

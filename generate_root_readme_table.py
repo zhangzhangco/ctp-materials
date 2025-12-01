@@ -1,7 +1,7 @@
 import os
 import re
 
-BASE_DIR = "/Users/John/ctp-materials/test_materials"
+BASE_DIR = "/Users/zhangxin/ctp-materials/test_materials"
 GITHUB_BASE_URL = "." # Relative paths work best for READMEs
 
 def get_ctp_section(readme_path):
@@ -47,21 +47,21 @@ for i, d in enumerate(dirs):
     })
 
 # Generate Markdown Table
-print("| # | Material Name (素材名称) | CTP Section (CTP章节) | README | Image (图片) |")
+print("### Material List")
+print("| # | Material Name | CTP Section | README | Image |")
 print("|---|---|---|---|---|")
 for m in materials:
     link_text = "ZIP" if m['tiff_link'].endswith('.zip') else "TIFF"
     tiff_md = f"[{link_text}]({m['tiff_link']})" if m['tiff_link'] else "Pending"
-    # Escape pipes in name if any (unlikely but good practice)
     name = m['name'].replace("|", "\|")
     print(f"| {m['index']} | {name} | {m['ctp']} | [View]({m['readme_link']}) | {tiff_md} |")
 
 print("\n\n")
+print("### 素材列表")
 print("| 序号 | 素材名称 | CTP 章节 | README | 图片 |")
 print("|---|---|---|---|---|")
 for m in materials:
     link_text = "ZIP" if m['tiff_link'].endswith('.zip') else "TIFF"
     tiff_md = f"[{link_text}]({m['tiff_link']})" if m['tiff_link'] else "Pending"
-    # Escape pipes in name if any
     name = m['name'].replace("|", "\|")
     print(f"| {m['index']} | {name} | {m['ctp']} | [查看]({m['readme_link']}) | {tiff_md} |")
