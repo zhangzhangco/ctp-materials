@@ -135,29 +135,45 @@ jobs:
             "/usr/local/lib/libkumu.dylib"
           )
           
+          # Helper function to copy lib and resolve symlinks
+          copy_lib() {
+            local src=$1
+            local dest_dir=$2
+            # Resolve symlink to get the actual file
+            local actual_file=$(readlink -f "$src")
+            cp "$actual_file" "$dest_dir/"
+            # Also copy the symlink name if it's different
+            if [ "$(basename "$src")" != "$(basename "$actual_file")" ]; then
+              cp -P "$src" "$dest_dir/"
+            fi
+          }
+
           for lib in "${libs[@]}"; do
-            lib_name=$(basename "$lib")
-            cp "$lib" "dist/macos/lib/$lib_name"
-            chmod +w "dist/macos/lib/$lib_name"
+            copy_lib "$lib" "dist/macos/lib"
           done
 
           # Fix RPATH and library paths for binaries
           for bin in dist/macos/*; do
             if [[ -f "$bin" && -x "$bin" && "$bin" != *.sh ]]; then
+              echo "Fixing $bin..."
               install_name_tool -add_rpath "@executable_path/lib" "$bin" || true
-              for lib in "${libs[@]}"; do
-                lib_name=$(basename "$lib")
-                # Change absolute path to @rpath
-                install_name_tool -change "$lib" "@rpath/$lib_name" "$bin" || true
-                # Handle versioned names if necessary (e.g. libxerces-c-3.3.dylib)
-                # This is a simplification; robust script would check otool -L
+              
+              # Get list of linked libs
+              otool -L "$bin" | grep -v "$bin" | awk '{print $1}' | while read -r linked_lib; do
+                lib_name=$(basename "$linked_lib")
+                # Check if we have this lib in our bundled lib folder (matching start of name)
+                # This handles versioned names like libxerces-c-3.3.dylib matching libxerces-c.dylib
+                if ls dist/macos/lib/"$lib_name"* 1> /dev/null 2>&1; then
+                   echo "  Remapping $linked_lib to @rpath/$lib_name"
+                   install_name_tool -change "$linked_lib" "@rpath/$lib_name" "$bin"
+                fi
               done
+              
+              # Ad-hoc sign the binary to prevent "killed" error on arm64
+              codesign --force --deep --sign - "$bin"
             fi
           done
           
-          # Also fix paths inside the dylibs themselves if they refer to each other
-          # (Skipping for now as it's complex, hoping flat structure works or they don't inter-depend heavily with absolute paths)
-
           cd dist/macos && tar -czvf ../../dci-ctp-tools-macos.tar.gz .
 
       - name: Upload Artifact
