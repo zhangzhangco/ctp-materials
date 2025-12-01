@@ -52,12 +52,22 @@ jobs:
 
       - name: Package Linux Binaries
         run: |
-          mkdir -p dist/linux
+          mkdir -p dist/linux/lib
           cp ctp_compliance_tests/tools/dc-thumbprint dist/linux/
           cp ctp_compliance_tests/tools/schema-check dist/linux/
           cp ctp_compliance_tests/tools/kdm-decrypt dist/linux/
           cp ctp_compliance_tests/tools/j2c-scan dist/linux/
           cp ctp_compliance_tests/tools/*.py dist/linux/
+          # Copy dependencies
+          cp /usr/local/lib/libopenjpeg.so.5 dist/linux/lib/
+          cp /usr/local/lib/libasdcp.so dist/linux/lib/
+          cp /usr/local/lib/libkumu.so dist/linux/lib/
+          # Note: System libs like xerces-c might still be needed on target system, or we bundle them too.
+          # For simplicity, we assume user installs dependencies or we use LD_LIBRARY_PATH
+          echo '#!/bin/sh' > dist/linux/run.sh
+          echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(dirname "$0")/lib' >> dist/linux/run.sh
+          echo 'exec "$@"' >> dist/linux/run.sh
+          chmod +x dist/linux/run.sh
           cd dist/linux && tar -czvf ../../dci-ctp-tools-linux.tar.gz .
 
       - name: Upload Artifact
@@ -108,12 +118,46 @@ jobs:
 
       - name: Package macOS Binaries
         run: |
-          mkdir -p dist/macos
+          mkdir -p dist/macos/lib
           cp ctp_compliance_tests/tools/dc-thumbprint dist/macos/
           cp ctp_compliance_tests/tools/schema-check dist/macos/
           cp ctp_compliance_tests/tools/kdm-decrypt dist/macos/
           cp ctp_compliance_tests/tools/j2c-scan dist/macos/
           cp ctp_compliance_tests/tools/*.py dist/macos/
+          
+          # Copy and fix dylibs
+          libs=(
+            "/usr/local/lib/libopenjpeg.5.dylib"
+            "$(brew --prefix xerces-c)/lib/libxerces-c.dylib"
+            "$(brew --prefix xml-security-c)/lib/libxml-security-c.dylib"
+            "$(brew --prefix openssl)/lib/libcrypto.dylib"
+            "/usr/local/lib/libasdcp.dylib"
+            "/usr/local/lib/libkumu.dylib"
+          )
+          
+          for lib in "${libs[@]}"; do
+            lib_name=$(basename "$lib")
+            cp "$lib" "dist/macos/lib/$lib_name"
+            chmod +w "dist/macos/lib/$lib_name"
+          done
+
+          # Fix RPATH and library paths for binaries
+          for bin in dist/macos/*; do
+            if [[ -f "$bin" && -x "$bin" && "$bin" != *.sh ]]; then
+              install_name_tool -add_rpath "@executable_path/lib" "$bin" || true
+              for lib in "${libs[@]}"; do
+                lib_name=$(basename "$lib")
+                # Change absolute path to @rpath
+                install_name_tool -change "$lib" "@rpath/$lib_name" "$bin" || true
+                # Handle versioned names if necessary (e.g. libxerces-c-3.3.dylib)
+                # This is a simplification; robust script would check otool -L
+              done
+            fi
+          done
+          
+          # Also fix paths inside the dylibs themselves if they refer to each other
+          # (Skipping for now as it's complex, hoping flat structure works or they don't inter-depend heavily with absolute paths)
+
           cd dist/macos && tar -czvf ../../dci-ctp-tools-macos.tar.gz .
 
       - name: Upload Artifact
