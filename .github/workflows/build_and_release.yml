@@ -15,14 +15,14 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget cmake
 
       - name: Build and Install OpenJPEG 1.5
         run: |
           wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
           tar -xzvf openjpeg-1.5.2.tar.gz
           cd openjpeg-1.5.2
-          ./configure
+          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
           make
           sudo make install
           sudo ldconfig
@@ -70,14 +70,14 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          brew install openssl xerces-c xml-security-c autoconf automake libtool wget
+          brew install openssl xerces-c xml-security-c autoconf automake libtool wget cmake
 
       - name: Build and Install OpenJPEG 1.5
         run: |
           wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
           tar -xzvf openjpeg-1.5.2.tar.gz
           cd openjpeg-1.5.2
-          ./configure
+          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
           make
           sudo make install
           # Copy headers required by j2c-scan
