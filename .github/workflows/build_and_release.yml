@@ -19,7 +19,7 @@ jobs:
 
       - name: Build and Install OpenJPEG 1.5
         run: |
-          wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/openjpeg/openjpeg-1.5.2.tar.gz
+          wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
           tar -xzvf openjpeg-1.5.2.tar.gz
           cd openjpeg-1.5.2
           ./configure
@@ -74,7 +74,7 @@ jobs:
 
       - name: Build and Install OpenJPEG 1.5
         run: |
-          wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/openjpeg/openjpeg-1.5.2.tar.gz
+          wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
           tar -xzvf openjpeg-1.5.2.tar.gz
           cd openjpeg-1.5.2
           ./configure
