@@ -71,8 +71,8 @@ jobs:
       - name: Build Tools
         run: |
           cd ctp_compliance_tests/tools
-          export CFLAGS="-I$(brew --prefix openssl)/include"
-          export LDFLAGS="-L$(brew --prefix openssl)/lib"
+          export CFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix xerces-c)/include -I$(brew --prefix openjpeg)/include -I$(brew --prefix xml-security-c)/include"
+          export LDFLAGS="-L$(brew --prefix openssl)/lib -L$(brew --prefix xerces-c)/lib -L$(brew --prefix openjpeg)/lib -L$(brew --prefix xml-security-c)/lib"
           make
 
       - name: Package macOS Binaries
