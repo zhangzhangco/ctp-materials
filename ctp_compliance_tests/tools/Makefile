@@ -17,16 +17,16 @@ TARGETS = dc-thumbprint schema-check j2c-scan kdm-decrypt
 all: $(TARGETS)
 
 dc-thumbprint: dc-thumbprint.c
-	$(CC) $(CFLAGS) -o $@ $< $(LIBS_CRYPTO)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS_CRYPTO)
 
 schema-check: schema-check.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $< $(LIBS_XERCES)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS_XERCES)
 
 j2c-scan: j2c-scan.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $< $(LIBS_OPENJPEG)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS_OPENJPEG)
 
 kdm-decrypt: kdm-decrypt.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $< $(LIBS_KDM)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS_KDM)
 
 clean:
 	rm -f $(TARGETS)

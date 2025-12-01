@@ -79,7 +79,7 @@ main(int argc, char* argv[])
 
     /* perform the base64 encoding */
     (void) EVP_EncodeBlock((unsigned char *)md_base64, md_value,
-                           EVP_MD_meth_get_result_size(md));
+                           EVP_MD_size(md));
 
     printf("%s\n", md_base64);
     return 0;
