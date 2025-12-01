@@ -18,6 +18,11 @@ This repository provides a collection of test materials (TIFF images) referenced
 *   **Use at Your Own Risk:** The user assumes all responsibility for the use of these materials. The authors are not liable for any errors, omissions, or damages arising from their use.
 *   **Free for Public Use:** This project is free and open for public use. Feedback is welcome.
 
+### CTP Tools (Appendix C)
+We provide pre-compiled tools referenced in CTP Appendix C (e.g., `dc-thumbprint`, `j2c-scan`, `kdm-decrypt`).
+*   **[Download Tools (Releases)](../../releases)**: Pre-compiled binaries for macOS and Linux.
+*   **[Source Code & Documentation](./ctp_compliance_tests/README.md)**: Build instructions and usage guide.
+
 ### Material List
 | # | Material Name | CTP Section | README | Image |
 |---|---|---|---|---|
@@ -135,6 +140,11 @@ To use these materials in a digital cinema environment, you must package the TIF
 *   **未经正式测试：** 这些素材**未经过** DCI 或任何授权测试机构的正式验证。
 *   **风险自担：** 用户需自行承担使用这些素材的所有责任。作者不对因使用这些素材而导致的任何错误、遗漏或损害负责。
 *   **免费公开：** 本项目免费向公众开放，欢迎反馈。
+
+### CTP 工具箱 (附录 C)
+本项目提供了 CTP 附录 C 中提到的合规性测试工具（如 `dc-thumbprint`, `j2c-scan`, `kdm-decrypt`）。
+*   **[下载工具 (Releases)](../../releases)**: 适用于 macOS 和 Linux 的预编译绿色版工具包。
+*   **[源代码与文档](./ctp_compliance_tests/README.md)**: 编译说明和详细使用指南。
 
 ### 素材列表
 | 序号 | 素材名称 | CTP 章节 | README | 图片 |
