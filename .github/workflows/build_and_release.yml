@@ -45,7 +45,17 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          brew install openssl xerces-c openjpeg xml-security-c asdcplib
+          brew install openssl xerces-c openjpeg xml-security-c autoconf automake libtool
+
+      - name: Build and Install asdcplib
+        run: |
+          git clone https://github.com/cinecert/asdcplib.git
+          cd asdcplib
+          autoreconf -if
+          ./configure --with-openssl=$(brew --prefix openssl)
+          make
+          sudo make install
+          cd ..
 
       - name: Build Tools
         run: |
