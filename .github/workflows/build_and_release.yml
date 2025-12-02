@@ -11,14 +11,14 @@ permissions:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget cmake
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget cmake patchelf
 
       - name: Build and Install OpenJPEG 1.5
         run: |
@@ -48,26 +48,42 @@ jobs:
       - name: Build Tools
         run: |
           cd ctp_compliance_tests/tools
+          # Statically link libgcc and libstdc++ to avoid GLIBCXX version issues on older distros
+          export LDFLAGS="-static-libgcc -static-libstdc++"
           make
 
       - name: Package Linux Binaries
         run: |
           mkdir -p dist/linux/lib
+          
+          # Copy binaries
           cp ctp_compliance_tests/tools/dc-thumbprint dist/linux/
           cp ctp_compliance_tests/tools/schema-check dist/linux/
           cp ctp_compliance_tests/tools/kdm-decrypt dist/linux/
           cp ctp_compliance_tests/tools/j2c-scan dist/linux/
           cp ctp_compliance_tests/tools/*.py dist/linux/
+          
           # Copy dependencies
-          cp /usr/local/lib/libopenjpeg.so.5 dist/linux/lib/
-          cp /usr/local/lib/libasdcp.so dist/linux/lib/
-          cp /usr/local/lib/libkumu.so dist/linux/lib/
-          # Note: System libs like xerces-c might still be needed on target system, or we bundle them too.
-          # For simplicity, we assume user installs dependencies or we use LD_LIBRARY_PATH
-          echo '#!/bin/sh' > dist/linux/run.sh
-          echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(dirname "$0")/lib' >> dist/linux/run.sh
-          echo 'exec "$@"' >> dist/linux/run.sh
-          chmod +x dist/linux/run.sh
+          # We use wildcards to catch versioned .so files
+          cp /usr/local/lib/libopenjpeg.so* dist/linux/lib/
+          cp /usr/local/lib/libasdcp.so* dist/linux/lib/
+          cp /usr/local/lib/libkumu.so* dist/linux/lib/
+          
+          # Copy system libraries that are not statically linked
+          # On Ubuntu 20.04, these are usually in /usr/lib/x86_64-linux-gnu/
+          cp /usr/lib/x86_64-linux-gnu/libxerces-c-*.so* dist/linux/lib/
+          cp /usr/lib/x86_64-linux-gnu/libxml-security-c-*.so* dist/linux/lib/
+          cp /usr/lib/x86_64-linux-gnu/libcrypto.so* dist/linux/lib/
+
+          # Set RPATH to $ORIGIN/lib so binaries find bundled libs automatically
+          for bin in dist/linux/*; do
+            if [[ -f "$bin" && -x "$bin" && "$bin" != *.sh && "$bin" != *.py ]]; then
+              echo "Setting RPATH for $bin..."
+              patchelf --set-rpath '$ORIGIN/lib' "$bin"
+              patchelf --force-rpath "$bin"
+            fi
+          done
+
           cd dist/linux && tar -czvf ../../dci-ctp-tools-linux.tar.gz .
 
       - name: Upload Artifact
