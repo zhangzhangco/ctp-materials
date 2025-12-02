@@ -1,5 +1,7 @@
 # DCI Compliance Test Plan (CTP) 1.4.3 Test Materials / DCI CTP 1.4.3 测试素材库
 
+[![Build and Release CTP Tools](https://github.com/zhangzhangco/ctp-materials/actions/workflows/build_and_release.yml/badge.svg)](https://github.com/zhangzhangco/ctp-materials/actions/workflows/build_and_release.yml)
+
 [English](#english) | [中文](#chinese)
 
 ---
