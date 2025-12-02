@@ -6,7 +6,7 @@
 
 ---
 
-`<a name="english"></a>`
+<a id="english"></a>
 
 ## 🇬🇧 English
 
@@ -139,7 +139,7 @@ To use these materials in a digital cinema environment, you must package the TIF
 
 ---
 
-`<a name="chinese"></a>`
+<a id="chinese"></a>
 
 ## 🇨🇳 中文
 
