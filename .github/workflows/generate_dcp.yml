@@ -147,7 +147,11 @@ jobs:
   release:
     needs: generate-dcp
     runs-on: ubuntu-22.04
-    if: github.ref == 'refs/heads/main'
+    # Run even if some generate-dcp jobs failed (but not if cancelled)
+    if: |
+      always() && 
+      github.ref == 'refs/heads/main' &&
+      !cancelled()
     permissions:
       contents: write
     
