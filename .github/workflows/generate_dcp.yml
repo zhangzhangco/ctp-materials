@@ -105,11 +105,44 @@ jobs:
           zip -r ../DCP_${{ matrix.clean_name }}.zip .
           cd ..
           
+      - name: Generate Status Badge
+        if: always()
+        run: |
+          # Create status directory
+          mkdir -p dcp-status
+          
+          # Determine status color
+          if [ "${{ job.status }}" == "success" ]; then
+            STATUS="success"
+            COLOR="brightgreen"
+          else
+            STATUS="failed"
+            COLOR="red"
+          fi
+          
+          # Generate JSON status file
+          cat > dcp-status/${{ matrix.clean_name }}.json << EOF
+          {
+            "schemaVersion": 1,
+            "label": "DCP",
+            "message": "$STATUS",
+            "color": "$COLOR"
+          }
+          EOF
+          
       - name: Upload DCP ZIP as Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: dcp-${{ matrix.clean_name }}
           path: DCP_${{ matrix.clean_name }}.zip
+          
+      - name: Upload Status Badge
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: status-${{ matrix.clean_name }}
+          path: dcp-status/${{ matrix.clean_name }}.json
 
   release:
     needs: generate-dcp
@@ -128,10 +161,13 @@ jobs:
           
       - name: Prepare release files
         run: |
-          mkdir -p release-files
+          mkdir -p release-files badges
           # Move all zip files to release-files directory
           find dcp-releases -name "*.zip" -exec mv {} release-files/ \;
+          # Move all status JSON files to badges directory  
+          find dcp-releases -name "*.json" -exec mv {} badges/ \;
           ls -lh release-files/
+          ls -lh badges/
           
       - name: Create/Update Release
         uses: softprops/action-gh-release@v1
@@ -146,7 +182,9 @@ jobs:
             
             **Generated:** ${{ github.event.head_commit.timestamp }}
             **Commit:** ${{ github.sha }}
-          files: release-files/*.zip
+          files: |
+            release-files/*.zip
+            badges/*.json
           fail_on_unmatched_files: false
           prerelease: false
           draft: false
