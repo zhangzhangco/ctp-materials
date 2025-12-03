@@ -19,3 +19,4 @@ __pycache__/
 *.log
 ctp_packaging_config/
 
+temp_asdcplib/
