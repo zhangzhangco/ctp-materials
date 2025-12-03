@@ -8,7 +8,7 @@ on:
       - 'test_materials/**'
       - 'ctp_compliance_tests/tools/**'
       - '.github/workflows/generate_dcp.yml'
-  workflow_dispatch:  # Allow manual trigger without inputs
+  workflow_dispatch:  # 允许手动触发，无需输入
 
 jobs:
   setup:
@@ -20,10 +20,10 @@ jobs:
       - name: Discover Tests
         id: set-matrix
         run: |
-          # Run discovery script and capture JSON output
+          # 运行发现脚本并捕获 JSON 输出
           MATRIX_JSON=$(python3 scripts/discover_tests.py --dir test_materials)
           echo "Discovered tests: $MATRIX_JSON"
-          # Set output for next job
+          # 设置下一个作业的输出
           echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
 
   generate-dcp:
@@ -67,7 +67,7 @@ jobs:
 
       - name: Generate DCP for ${{ matrix.name }}
         run: |
-          # Get inputs from matrix
+          # 从矩阵中获取输入
           INPUT_PATH="${{ matrix.input_path }}"
           CLEAN_NAME="${{ matrix.clean_name }}"
           FPS="${{ matrix.fps }}"
@@ -75,12 +75,12 @@ jobs:
           echo "Processing: $CLEAN_NAME"
           echo "Input: $INPUT_PATH"
           
-          # Generate Date
+          # 生成日期
           DATE=$(date +%Y%m%d)
           
-          # Construct Title
-          # Structure: Title_ContentType_AspectRatio_Language_Territory_Rating_Audio_Resolution_Studio_Date_Facility_Standard_PackageType
-          # We use values from matrix or defaults
+          # 构建标题
+          # 结构: Title_ContentType_AspectRatio_Language_Territory_Rating_Audio_Resolution_Studio_Date_Facility_Standard_PackageType
+          # 我们使用矩阵中的值或默认值
           RES="${{ matrix.resolution }}"
           AR="${{ matrix.aspect_ratio }}"
           AUDIO="${{ matrix.audio }}"
@@ -89,11 +89,11 @@ jobs:
           
           echo "Generated Title: $DCP_TITLE"
           
-          # Determine duration (default 120 frames = 5s @ 24fps)
-          # If it's a sequence, the script handles duration automatically
+          # 确定时长 (默认 120 帧 = 5秒 @ 24fps)
+          # 如果是序列，脚本会自动处理时长
           DURATION=120
           
-          #Select script based on input type
+          # 根据输入类型选择脚本
           INPUT_TYPE="${{ matrix.input_type }}"
           
           if [ "$INPUT_TYPE" == "multi_reel" ]; then
@@ -120,30 +120,7 @@ jobs:
           zip -r ../DCP_${{ matrix.clean_name }}.zip .
           cd ..
           
-      - name: Generate Status Badge
-        if: always()
-        run: |
-          # Create status directory
-          mkdir -p dcp-status
-          
-          # Determine status color
-          if [ "${{ job.status }}" == "success" ]; then
-            STATUS="success"
-            COLOR="brightgreen"
-          else
-            STATUS="failed"
-            COLOR="red"
-          fi
-          
-          # Generate JSON status file
-          cat > dcp-status/${{ matrix.clean_name }}.json << EOF
-          {
-            "schemaVersion": 1,
-            "label": "DCP",
-            "message": "$STATUS",
-            "color": "$COLOR"
-          }
-          EOF
+
           
       - name: Upload DCP ZIP as Artifact
         if: success()
@@ -152,17 +129,12 @@ jobs:
           name: dcp-${{ matrix.clean_name }}
           path: DCP_${{ matrix.clean_name }}.zip
           
-      - name: Upload Status Badge
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: status-${{ matrix.clean_name }}
-          path: dcp-status/${{ matrix.clean_name }}.json
+
 
   release:
     needs: generate-dcp
     runs-on: ubuntu-22.04
-    # Run even if some generate-dcp jobs failed (but not if cancelled)
+    # 即使某些 generate-dcp 作业失败也运行 (但如果被取消则不运行)
     if: |
       always() && 
       github.ref == 'refs/heads/main' &&
@@ -180,13 +152,10 @@ jobs:
           
       - name: Prepare release files
         run: |
-          mkdir -p release-files badges
-          # Move all zip files to release-files directory
+          mkdir -p release-files
+          # 将所有 zip 文件移动到 release-files 目录
           find dcp-releases -name "*.zip" -exec mv {} release-files/ \;
-          # Move all status JSON files to badges directory  
-          find dcp-releases -name "*.json" -exec mv {} badges/ \;
           ls -lh release-files/
-          ls -lh badges/
           
       - name: Create/Update Release
         uses: softprops/action-gh-release@v1
@@ -203,7 +172,6 @@ jobs:
             **Commit:** ${{ github.sha }}
           files: |
             release-files/*.zip
-            badges/*.json
           fail_on_unmatched_files: false
           prerelease: false
           draft: false
