@@ -160,9 +160,21 @@ def main():
         j2k_params = ["-p", "CPRL"]
     
     if is_sequence:
+        # For sequences, we need to ensure ALL frames have identical J2K parameters
+        # Add explicit parameters to force consistency
+        base_params = j2k_params.copy()
+        # Add cinema profile parameters for consistency
+        # These ensure all frames are encoded identically regardless of content
+        if "4K" in args.title or "4k" in args.title:
+            # 4K Cinema profile
+            consistent_params = base_params + ["-n", "2", "-c", "[128,128]", "-b", "64,64"]
+        else:
+            # 2K Cinema profile  
+            consistent_params = base_params + ["-n", "1", "-c", "[128,128]", "-b", "64,64"]
+        
         for i, img_path in enumerate(input_files):
             dst_j2k = os.path.join(j2k_dir, f"frame_{i:06d}.j2c")
-            cmd_convert = ["image_to_j2k", "-i", img_path, "-o", dst_j2k] + j2k_params
+            cmd_convert = ["image_to_j2k", "-i", img_path, "-o", dst_j2k] + consistent_params
             # We can silence output for bulk conversion
             try:
                 subprocess.check_call(cmd_convert, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
