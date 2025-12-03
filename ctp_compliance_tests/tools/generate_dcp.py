@@ -68,9 +68,16 @@ def main():
     # 1. Convert TIFF to J2K
     print("Converting TIFF to J2K...")
     base_j2k = os.path.join(j2k_dir, "frame.j2c")
-    # Cinema 2K profile: -p cinema2k
-    # Explicitly set progression order to CPRL to avoid "Unrecognized progression order" error
-    cmd_convert = ["image_to_j2k", "-p", "cinema2k", "-r", "CPRL", "-i", args.image, "-o", base_j2k] 
+    
+    # OpenJPEG 1.5 help says:
+    # -p : progression order (-p LRCP) [LRCP, RLCP, RPCL, PCRL, CPRL]
+    # It does NOT seem to have a simple "-p cinema2k" profile flag like OpenJPEG 2.x.
+    # We need to manually set parameters or just use a compatible progression.
+    # DCI compliant J2K usually uses CPRL.
+    # We also need to ensure 24fps, 2K resolution, etc., but image_to_j2k mainly handles compression.
+    # Let's try setting progression to CPRL.
+    
+    cmd_convert = ["image_to_j2k", "-i", args.image, "-o", base_j2k, "-p", "CPRL"]
     
     print(f"Running: {' '.join(cmd_convert)}")
     try:
