@@ -149,11 +149,10 @@ def main():
     # DCI spec: 2K @ 24fps = 250 Mbps max, 4K @ 24fps = 250 Mbps max per frame
     # We use a safe limit to ensure compatibility with asdcplib buffer
     if "4K" in args.title or "4k" in args.title:
-        # For 4K, use lower bitrate to fit in buffer (max ~200 Mbps)
-        # image_to_j2k doesn't have direct bitrate control, but we can use compression ratio
+        # For 4K, use higher compression to fit in buffer (max 4MB)
         # Approximate: 4K frame = 4096x2160x3 = ~26M pixels, at 12-bit = ~39MB uncompressed
-        # Target ~3-4MB compressed (10:1 ratio is safe for DCI)
-        j2k_params = ["-p", "CPRL", "-r", "10"]  # 10:1 compression ratio
+        # Target ~3MB compressed (20:1 ratio is safe for asdcplib 4MB buffer)
+        j2k_params = ["-p", "CPRL", "-r", "20"]  # 20:1 compression ratio
     else:
         # 2K uses default CPRL
         j2k_params = ["-p", "CPRL"]
