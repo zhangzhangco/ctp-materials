@@ -1,0 +1,72 @@
+name: Generate DCP
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_name:
+        description: 'Name of the test to generate DCP for'
+        required: true
+        default: '2K 2D 24 FPS Test'
+      duration_frames:
+        description: 'Duration in frames'
+        required: true
+        default: '24'
+
+jobs:
+  generate-dcp:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget cmake patchelf
+
+      - name: Build and Install OpenJPEG 1.5
+        run: |
+          wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
+          tar -xzvf openjpeg-1.5.2.tar.gz
+          cd openjpeg-1.5.2
+          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
+      - name: Build and Install asdcplib
+        run: |
+          git clone https://github.com/cinecert/asdcplib.git
+          cd asdcplib
+          autoreconf -if
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
+      - name: Generate DCP
+        run: |
+          # Find the TIFF file
+          TEST_DIR="test_materials/${{ inputs.test_name }}"
+          TIFF_FILE=$(find "$TEST_DIR" -name "*.tiff" | head -n 1)
+          
+          if [ -z "$TIFF_FILE" ]; then
+            echo "Error: No TIFF file found in $TEST_DIR"
+            exit 1
+          fi
+          
+          echo "Found TIFF: $TIFF_FILE"
+          
+          # Run the generation script
+          python3 ctp_compliance_tests/tools/generate_dcp.py \
+            --image "$TIFF_FILE" \
+            --output "dcp_output" \
+            --duration ${{ inputs.duration_frames }} \
+            --title "TEST_DCP"
+
+      - name: Upload DCP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-dcp
+          path: dcp_output/
