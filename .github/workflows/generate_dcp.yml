@@ -38,6 +38,7 @@ jobs:
         run: |
           git clone https://github.com/cinecert/asdcplib.git
           cd asdcplib
+          patch -p0 < ../patches/asdcplib_limit.patch
           autoreconf -if
           ./configure
           make
