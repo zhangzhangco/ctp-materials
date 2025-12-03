@@ -58,12 +58,26 @@ jobs:
           
           echo "Found TIFF: $TIFF_FILE"
           
+          # Generate ISDCF Compliant Title based on Test Name
+          # 1. Replace spaces with hyphens and uppercase
+          RAW_NAME="${{ inputs.test_name }}"
+          CLEAN_NAME=$(echo "$RAW_NAME" | tr ' ' '-' | tr '[:lower:]' '[:upper:]')
+          
+          # 2. Get current date
+          DATE=$(date +%Y%m%d)
+          
+          # 3. Construct Title
+          # Structure: Title_ContentType_AspectRatio_Language_Territory_Rating_Audio_Resolution_Studio_Date_Facility_Standard_PackageType
+          DCP_TITLE="${CLEAN_NAME}_TST_F_XX-XX_INT-TD_MOS_2K_CTP_${DATE}_SMPTE_OV"
+          
+          echo "Generated DCP Title: $DCP_TITLE"
+          
           # Run the generation script
           python3 ctp_compliance_tests/tools/generate_dcp.py \
             --image "$TIFF_FILE" \
             --output "dcp_output" \
             --duration ${{ inputs.duration_frames }} \
-            --title "TEST_DCP"
+            --title "$DCP_TITLE"
 
       - name: Upload DCP Artifact
         uses: actions/upload-artifact@v4
