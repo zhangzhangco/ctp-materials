@@ -146,15 +146,17 @@ def main():
     # If single: convert file 0 to frame.j2c, then copy
     
     # Determine cinema bitrate limits based on resolution and fps
-    # DCI spec: 2K @ 24fps = 250 Mbps max, 4K @ 24fps = 250 Mbps max per frame
-    # We use a safe limit to ensure compatibility with asdcplib buffer
+    # DCI spec: Max bitrate = 250 Mbps for both 2K and 4K
+    # For 4K @ 24fps: 250 Mbps / 24 fps / 8 = 1.3 MB per frame max
     if "4K" in args.title or "4k" in args.title:
-        # For 4K, use higher compression to fit in buffer (max 4MB)
-        # Approximate: 4K frame = 4096x2160x3 = ~26M pixels, at 12-bit = ~39MB uncompressed
-        # Target ~3MB compressed (20:1 ratio is safe for asdcplib 4MB buffer)
-        j2k_params = ["-p", "CPRL", "-r", "20"]  # 20:1 compression ratio
+        # For 4K: Must fit in both DCI limit (1.3MB) and asdcplib buffer (4MB)
+        # 4K uncompressed ≈ 40MB, target 1.3MB → 30:1 compression
+        # This ensures:
+        # - DCI compliant bitrate (≤ 250 Mbps)
+        # - Fits in asdcplib 4MB buffer
+        j2k_params = ["-p", "CPRL", "-r", "30"]  # 30:1 compression ratio
     else:
-        # 2K uses default CPRL
+        # 2K uses default CPRL (usually compresses to well under limits)
         j2k_params = ["-p", "CPRL"]
     
     if is_sequence:
