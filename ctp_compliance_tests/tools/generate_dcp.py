@@ -69,8 +69,20 @@ def main():
     print("Converting TIFF to J2K...")
     base_j2k = os.path.join(j2k_dir, "frame.j2c")
     # Cinema 2K profile: -p cinema2k
-    cmd_convert = ["image_to_j2k", "-i", args.image, "-o", base_j2k, "-p", "cinema2k"] 
-    run_command(cmd_convert)
+    # Explicitly set progression order to CPRL to avoid "Unrecognized progression order" error
+    cmd_convert = ["image_to_j2k", "-p", "cinema2k", "-r", "CPRL", "-i", args.image, "-o", base_j2k] 
+    
+    print(f"Running: {' '.join(cmd_convert)}")
+    try:
+        subprocess.check_call(cmd_convert)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running command: {e}")
+        print("Attempting to print image_to_j2k help for debugging:")
+        try:
+            subprocess.call(["image_to_j2k", "-h"])
+        except Exception as ex:
+            print(f"Could not print help: {ex}")
+        sys.exit(1)
 
     # 2. Create Frame Sequence
     print(f"Creating {args.duration} frames...")
