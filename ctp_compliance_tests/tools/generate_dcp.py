@@ -105,9 +105,9 @@ def main():
     video_mxf_name = f"{video_mxf_uuid}.mxf"
     video_mxf_path = os.path.join(args.output, video_mxf_name)
     
-    frame_files = sorted([os.path.join(j2k_dir, f) for f in os.listdir(j2k_dir) if f.endswith(".j2c")])
-    
-    cmd_wrap = ["asdcp-test", "-c", video_mxf_path] + frame_files
+    # asdcp-test expects a directory for J2K input, not a list of files.
+    # It scans the directory and sorts files alphabetically.
+    cmd_wrap = ["asdcp-test", "-c", video_mxf_path, j2k_dir]
     run_command(cmd_wrap)
 
     shutil.rmtree(j2k_dir)
