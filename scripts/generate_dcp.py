@@ -172,9 +172,9 @@ def main():
     else:
         # 2K DCI
         if args.fps == 48:
-            j2k_params += ["-cinema2K", "48"]
+            j2k_params += ["-cinema2K", "48", "-GuardBits", "1"]
         else:
-            j2k_params += ["-cinema2K", "24"]
+            j2k_params += ["-cinema2K", "24", "-GuardBits", "1"]
     
     if is_sequence:
         # For sequences, we need to ensure ALL frames have identical J2K parameters
