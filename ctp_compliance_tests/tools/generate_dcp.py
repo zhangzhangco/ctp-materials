@@ -90,39 +90,95 @@ def main():
         shutil.rmtree(j2k_dir)
     os.makedirs(j2k_dir)
 
-    # 1. Convert TIFF to J2K
-    print("Converting TIFF to J2K...")
-    base_j2k = os.path.join(j2k_dir, "frame.j2c")
+    temp_extract_dir = os.path.join(args.output, "temp_extract")
+    if os.path.exists(temp_extract_dir):
+        shutil.rmtree(temp_extract_dir)
     
-    # OpenJPEG 1.5 help says:
-    # -p : progression order (-p LRCP) [LRCP, RLCP, RPCL, PCRL, CPRL]
-    # It does NOT seem to have a simple "-p cinema2k" profile flag like OpenJPEG 2.x.
-    # We need to manually set parameters or just use a compatible progression.
-    # DCI compliant J2K usually uses CPRL.
-    # We also need to ensure 24fps, 2K resolution, etc., but image_to_j2k mainly handles compression.
-    # Let's try setting progression to CPRL.
+    input_files = []
     
-    cmd_convert = ["image_to_j2k", "-i", args.image, "-o", base_j2k, "-p", "CPRL"]
-    
-    print(f"Running: {' '.join(cmd_convert)}")
-    try:
-        subprocess.check_call(cmd_convert)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running command: {e}")
-        print("Attempting to print image_to_j2k help for debugging:")
-        try:
-            subprocess.call(["image_to_j2k", "-h"])
-        except Exception as ex:
-            print(f"Could not print help: {ex}")
-        sys.exit(1)
+    # Handle Input
+    if args.image.lower().endswith(".zip"):
+        print(f"Extracting ZIP file: {args.image}")
+        os.makedirs(temp_extract_dir)
+        subprocess.check_call(["unzip", "-q", args.image, "-d", temp_extract_dir])
+        
+        # Find all TIFFs in extracted dir
+        for root, dirs, files in os.walk(temp_extract_dir):
+            for f in files:
+                if f.lower().endswith(('.tiff', '.tif')):
+                    input_files.append(os.path.join(root, f))
+        
+        if not input_files:
+            print("Error: No TIFF files found in ZIP.")
+            sys.exit(1)
+            
+        input_files.sort() # Ensure sequence order
+        
+    elif os.path.isdir(args.image):
+        print(f"Processing directory: {args.image}")
+        for root, dirs, files in os.walk(args.image):
+            for f in files:
+                if f.lower().endswith(('.tiff', '.tif')):
+                    input_files.append(os.path.join(root, f))
+        input_files.sort()
+        
+    else:
+        # Single file
+        input_files.append(args.image)
 
-    # 2. Create Frame Sequence
-    print(f"Creating {args.duration} frames...")
-    for i in range(args.duration):
-        dst = os.path.join(j2k_dir, f"frame_{i:06d}.j2c")
-        shutil.copy(base_j2k, dst)
+    # 1. Convert TIFF to J2K
+    print(f"Converting {len(input_files)} input files to J2K...")
     
-    os.remove(base_j2k)
+    # Determine if we are repeating a single frame or processing a sequence
+    is_sequence = len(input_files) > 1
+    
+    if is_sequence:
+        # For sequence, duration is determined by number of frames
+        # Unless user specified a shorter duration? No, usually we convert all.
+        # But args.duration might be passed as default 24 (1 sec) or 120 (5 sec).
+        # If it's a sequence, we should probably ignore args.duration or use it as a limit?
+        # Let's set duration to input length for sequence.
+        args.duration = len(input_files)
+        print(f"Sequence detected. Setting duration to {args.duration} frames.")
+    
+    # Convert loop
+    # If sequence: convert each file i to frame_i
+    # If single: convert file 0 to frame.j2c, then copy
+    
+    if is_sequence:
+        for i, img_path in enumerate(input_files):
+            dst_j2k = os.path.join(j2k_dir, f"frame_{i:06d}.j2c")
+            cmd_convert = ["image_to_j2k", "-i", img_path, "-o", dst_j2k, "-p", "CPRL"]
+            # We can silence output for bulk conversion
+            try:
+                subprocess.check_call(cmd_convert, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if i % 10 == 0:
+                    print(f"Converted frame {i}/{args.duration}", end='\r')
+            except subprocess.CalledProcessError:
+                print(f"Error converting frame {i}: {img_path}")
+                sys.exit(1)
+        print(f"\nConverted {args.duration} frames.")
+        
+    else:
+        # Single file conversion
+        base_j2k = os.path.join(j2k_dir, "base_frame.j2c")
+        cmd_convert = ["image_to_j2k", "-i", input_files[0], "-o", base_j2k, "-p", "CPRL"]
+        print(f"Running: {' '.join(cmd_convert)}")
+        try:
+            subprocess.check_call(cmd_convert)
+        except subprocess.CalledProcessError as e:
+            print(f"Error running command: {e}")
+            sys.exit(1)
+
+        # 2. Create Frame Sequence (Repeat)
+        print(f"Creating {args.duration} frames from single source...")
+        for i in range(args.duration):
+            dst = os.path.join(j2k_dir, f"frame_{i:06d}.j2c")
+            shutil.copy(base_j2k, dst)
+        os.remove(base_j2k)
+        
+    if os.path.exists(temp_extract_dir):
+        shutil.rmtree(temp_extract_dir)
 
     # 3. Wrap into MXF
     print("Wrapping J2K frames into MXF...")

@@ -13,15 +13,35 @@ on:
         default: '24'
 
 jobs:
-  generate-dcp:
+  setup:
     runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Discover Tests
+        id: set-matrix
+        run: |
+          # Run discovery script and capture JSON output
+          MATRIX_JSON=$(python3 ctp_compliance_tests/tools/discover_tests.py --dir test_materials)
+          echo "Discovered tests: $MATRIX_JSON"
+          # Set output for next job
+          echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+
+  generate-dcp:
+    needs: setup
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget cmake patchelf
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget cmake patchelf unzip
 
       - name: Build and Install OpenJPEG 1.5
         run: |
@@ -45,42 +65,44 @@ jobs:
           sudo ldconfig
           cd ..
 
-      - name: Generate DCP
+      - name: Generate DCP for ${{ matrix.name }}
         run: |
-          # Find the TIFF file
-          TEST_DIR="test_materials/${{ inputs.test_name }}"
-          TIFF_FILE=$(find "$TEST_DIR" -name "*.tiff" | head -n 1)
+          # Get inputs from matrix
+          INPUT_PATH="${{ matrix.input_path }}"
+          CLEAN_NAME="${{ matrix.clean_name }}"
+          FPS="${{ matrix.fps }}"
           
-          if [ -z "$TIFF_FILE" ]; then
-            echo "Error: No TIFF file found in $TEST_DIR"
-            exit 1
-          fi
+          echo "Processing: $CLEAN_NAME"
+          echo "Input: $INPUT_PATH"
           
-          echo "Found TIFF: $TIFF_FILE"
-          
-          # Generate ISDCF Compliant Title based on Test Name
-          # 1. Replace spaces with hyphens and uppercase
-          RAW_NAME="${{ inputs.test_name }}"
-          CLEAN_NAME=$(echo "$RAW_NAME" | tr ' ' '-' | tr '[:lower:]' '[:upper:]')
-          
-          # 2. Get current date
+          # Generate Date
           DATE=$(date +%Y%m%d)
           
-          # 3. Construct Title
+          # Construct Title
           # Structure: Title_ContentType_AspectRatio_Language_Territory_Rating_Audio_Resolution_Studio_Date_Facility_Standard_PackageType
-          DCP_TITLE="${CLEAN_NAME}_TST_F_XX-XX_INT-TD_MOS_2K_CTP_${DATE}_SMPTE_OV"
+          # We use values from matrix or defaults
+          RES="${{ matrix.resolution }}"
+          AR="${{ matrix.aspect_ratio }}"
+          AUDIO="${{ matrix.audio }}"
           
-          echo "Generated DCP Title: $DCP_TITLE"
+          DCP_TITLE="${CLEAN_NAME}_TST_${AR}_XX-XX_INT-TD_${AUDIO}_${RES}_CTP_${DATE}_SMPTE_OV"
           
-          # Run the generation script
+          echo "Generated Title: $DCP_TITLE"
+          
+          # Determine duration (default 120 frames = 5s @ 24fps)
+          # If it's a sequence, the script handles duration automatically
+          DURATION=120
+          
+          # Run generation script
           python3 ctp_compliance_tests/tools/generate_dcp.py \
-            --image "$TIFF_FILE" \
+            --image "$INPUT_PATH" \
             --output "dcp_output" \
-            --duration ${{ inputs.duration_frames }} \
+            --duration $DURATION \
+            --fps $FPS \
             --title "$DCP_TITLE"
 
       - name: Upload DCP Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: generated-dcp
+          name: dcp-${{ matrix.clean_name }}
           path: dcp_output/
