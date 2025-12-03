@@ -39,11 +39,26 @@ def get_file_size(filepath):
     return os.path.getsize(filepath)
 
 def create_xml_file(root_element, output_path):
-    # toprettyxml with encoding returns bytes, so we decode to write as string
-    # or write bytes. Let's write bytes to ensure encoding is respected.
-    xml_bytes = minidom.parseString(tostring(root_element)).toprettyxml(indent="  ", encoding="UTF-8")
+    # Convert ElementTree to minidom for pretty printing
+    xml_str = tostring(root_element, encoding='utf-8')
+    dom = minidom.parseString(xml_str)
+    
+    # Remove whitespace-only text nodes to prevent extra newlines
+    def clean_whitespace(node):
+        to_remove = []
+        for child in node.childNodes:
+            if child.nodeType == minidom.Node.TEXT_NODE and not child.data.strip():
+                to_remove.append(child)
+            elif child.nodeType == minidom.Node.ELEMENT_NODE:
+                clean_whitespace(child)
+        for child in to_remove:
+            node.removeChild(child)
+            
+    clean_whitespace(dom)
+    
+    # Write to file with UTF-8 encoding
     with open(output_path, "wb") as f:
-        f.write(xml_bytes)
+        f.write(dom.toprettyxml(indent="  ", encoding="UTF-8"))
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a simple DCP from a single TIFF image.")
