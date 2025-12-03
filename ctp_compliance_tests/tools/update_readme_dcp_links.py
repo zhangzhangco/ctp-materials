@@ -22,55 +22,52 @@ def update_readme_with_dcp_links(readme_path):
         clean_name = material_name.replace(" ", "-").upper()
         return f"DCP_{clean_name}.zip"
     
-    # Pattern to match table rows (both English and Chinese)
-    # Format: | # | Material Name | CTP Section | README | Image |
-    # We want to add: | DCP |
+    # Process line by line
+    lines = content.split('\n')
+    new_lines = []
+    in_table = False
     
-    # First, update the header lines
-    # English table header
-    content = re.sub(
-        r'(\| #  \| Material Name\s+\| CTP Section\s+\| README\s+\| Image\s+\|)',
-        r'\1 DCP |',
-        content
-    )
+    for i, line in enumerate(lines):
+        # Detect table header
+        if re.match(r'^\|\s*#', line) or re.match(r'^\|\s*序号', line):
+            in_table = True
+            # Check if DCP column already exists
+            if '| DCP |' not in line and '| DCP' not in line:
+                # Add DCP header
+                new_line = line.rstrip() + ' DCP |'
+                new_lines.append(new_line)
+            else:
+                new_lines.append(line)
+        # Detect separator line
+        elif in_table and re.match(r'^\|\s*--', line):
+            if '| ---- |' not in line and not line.endswith('---- |'):
+                new_line = line.rstrip() + ' ---- |'
+                new_lines.append(new_line)
+            else:
+                new_lines.append(line)
+        # Detect data rows
+        elif in_table and re.match(r'^\|\s*\d+', line):
+            parts = line.split('|')
+            if len(parts) >= 6:
+                # Check if DCP link already exists
+                if '[📦 DCP]' not in line:
+                    material_name = parts[2].strip()
+                    dcp_filename = get_dcp_filename(material_name)
+                    dcp_url = f"{base_url}/{dcp_filename}"
+                    new_line = line.rstrip() + f' [📦 DCP]({dcp_url}) |'
+                    new_lines.append(new_line)
+                else:
+                    new_lines.append(line)
+            else:
+                new_lines.append(line)
+        # Detect end of table (empty line or non-table content)
+        elif in_table and line.strip() == '':
+            in_table = False
+            new_lines.append(line)
+        else:
+            new_lines.append(line)
     
-    # Chinese table header  
-    content = re.sub(
-        r'(\| 序号 \| 素材名称\s+\| CTP 章节\s+\| README\s+\| 图片\s+\|)',
-        r'\1 DCP |',
-        content
-    )
-    
-    # Update separator lines
-    content = re.sub(
-        r'(\| --+ \| --+ \| --+ \| --+ \| --+ \|)',
-        r'\1 ---- |',
-        content
-    )
-    
-    # Now update each data row
-    # Pattern: | number | Material Name | ... | ... | [link](path) |
-    # We need to extract the material name and add DCP link
-    
-    def add_dcp_column(match):
-        full_line = match.group(0)
-        # Extract material name (2nd column)
-        parts = full_line.split('|')
-        if len(parts) >= 6:
-            material_name = parts[2].strip()
-            dcp_filename = get_dcp_filename(material_name)
-            dcp_url = f"{base_url}/{dcp_filename}"
-            # Add DCP column before the final |
-            return full_line.rstrip() + f" [📦 DCP]({dcp_url}) |\n"
-        return full_line
-    
-    # Match table rows (starting with | number |)
-    content = re.sub(
-        r'^\|(\s*\d+\s*)\|(.+?)\|(.+?)\|(.+?)\|(.+?)\|\s*$',
-        add_dcp_column,
-        content,
-        flags=re.MULTILINE
-    )
+    content = '\n'.join(new_lines)
     
     # Write back
     with open(readme_path, 'w', encoding='utf-8') as f:
