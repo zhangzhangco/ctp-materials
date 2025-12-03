@@ -1,0 +1,223 @@
+name: Build and Release CTP Tools
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget cmake patchelf
+
+      - name: Build and Install OpenJPEG 1.5
+        run: |
+          wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
+          tar -xzvf openjpeg-1.5.2.tar.gz
+          cd openjpeg-1.5.2
+          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          make
+          sudo make install
+          sudo ldconfig
+          # Copy headers required by j2c-scan
+          cp libopenjpeg/openjpeg.h ../ctp_compliance_tests/tools/
+          cp libopenjpeg/j2k.h ../ctp_compliance_tests/tools/
+          cd ..
+
+      - name: Build and Install asdcplib
+        run: |
+          git clone https://github.com/cinecert/asdcplib.git
+          cd asdcplib
+          autoreconf -if
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
+      - name: Build Tools
+        run: |
+          cd ctp_compliance_tests/tools
+          # Statically link libgcc and libstdc++ to avoid GLIBCXX version issues on older distros
+          export LDFLAGS="-static-libgcc -static-libstdc++"
+          make
+
+      - name: Package Linux Binaries
+        run: |
+          mkdir -p dist/linux/lib
+          
+          # Copy binaries
+          cp ctp_compliance_tests/tools/dc-thumbprint dist/linux/
+          cp ctp_compliance_tests/tools/schema-check dist/linux/
+          cp ctp_compliance_tests/tools/kdm-decrypt dist/linux/
+          cp ctp_compliance_tests/tools/j2c-scan dist/linux/
+          cp ctp_compliance_tests/tools/*.py dist/linux/
+          
+          # Copy dependencies
+          # We use wildcards to catch versioned .so files
+          cp /usr/local/lib/libopenjpeg.so* dist/linux/lib/
+          cp /usr/local/lib/libasdcp.so* dist/linux/lib/
+          cp /usr/local/lib/libkumu.so* dist/linux/lib/
+          
+          # Copy system libraries that are not statically linked
+          # On Ubuntu 20.04, these are usually in /usr/lib/x86_64-linux-gnu/
+          cp /usr/lib/x86_64-linux-gnu/libxerces-c-*.so* dist/linux/lib/
+          cp /usr/lib/x86_64-linux-gnu/libxml-security-c.so* dist/linux/lib/
+          cp /usr/lib/x86_64-linux-gnu/libcrypto.so* dist/linux/lib/
+
+          # Set RPATH to $ORIGIN/lib so binaries find bundled libs automatically
+          for bin in dist/linux/*; do
+            if [[ -f "$bin" && -x "$bin" && "$bin" != *.sh && "$bin" != *.py ]]; then
+              echo "Setting RPATH for $bin..."
+              patchelf --set-rpath '$ORIGIN/lib' "$bin"
+              patchelf --force-rpath "$bin"
+            fi
+          done
+
+          cd dist/linux && tar -czvf ../../dci-ctp-tools-linux.tar.gz .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: dci-ctp-tools-linux.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          brew install openssl xerces-c xml-security-c autoconf automake libtool wget cmake
+
+      - name: Build and Install OpenJPEG 1.5
+        run: |
+          wget http://downloads.sourceforge.net/project/openjpeg.mirror/1.5.2/openjpeg-1.5.2.tar.gz
+          tar -xzvf openjpeg-1.5.2.tar.gz
+          cd openjpeg-1.5.2
+          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          make
+          sudo make install
+          # Copy headers required by j2c-scan
+          cp libopenjpeg/openjpeg.h ../ctp_compliance_tests/tools/
+          cp libopenjpeg/j2k.h ../ctp_compliance_tests/tools/
+          cd ..
+
+      - name: Build and Install asdcplib
+        run: |
+          git clone https://github.com/cinecert/asdcplib.git
+          cd asdcplib
+          autoreconf -if
+          ./configure --with-openssl=$(brew --prefix openssl)
+          make
+          sudo make install
+          cd ..
+
+      - name: Build Tools
+        run: |
+          cd ctp_compliance_tests/tools
+          export CFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix xerces-c)/include -I$(brew --prefix xml-security-c)/include"
+          export CXXFLAGS="-I$(brew --prefix openssl)/include -I$(brew --prefix xerces-c)/include -I$(brew --prefix xml-security-c)/include"
+          export LDFLAGS="-L$(brew --prefix openssl)/lib -L$(brew --prefix xerces-c)/lib -L$(brew --prefix xml-security-c)/lib"
+          make
+
+      - name: Package macOS Binaries
+        run: |
+          mkdir -p dist/macos/lib
+          cp ctp_compliance_tests/tools/dc-thumbprint dist/macos/
+          cp ctp_compliance_tests/tools/schema-check dist/macos/
+          cp ctp_compliance_tests/tools/kdm-decrypt dist/macos/
+          cp ctp_compliance_tests/tools/j2c-scan dist/macos/
+          cp ctp_compliance_tests/tools/*.py dist/macos/
+          
+          # Copy and fix dylibs
+          libs=(
+            "/usr/local/lib/libopenjpeg.5.dylib"
+            "$(brew --prefix xerces-c)/lib/libxerces-c.dylib"
+            "$(brew --prefix xml-security-c)/lib/libxml-security-c.dylib"
+            "$(brew --prefix openssl)/lib/libcrypto.dylib"
+            "/usr/local/lib/libasdcp.dylib"
+            "/usr/local/lib/libkumu.dylib"
+          )
+          
+          # Helper function to copy lib and resolve symlinks
+          copy_lib() {
+            local src=$1
+            local dest_dir=$2
+            # Resolve symlink to get the actual file
+            local actual_file=$(readlink -f "$src")
+            cp "$actual_file" "$dest_dir/"
+            # Also copy the symlink name if it's different
+            if [ "$(basename "$src")" != "$(basename "$actual_file")" ]; then
+              cp -P "$src" "$dest_dir/"
+            fi
+          }
+
+          for lib in "${libs[@]}"; do
+            copy_lib "$lib" "dist/macos/lib"
+          done
+
+          # Fix RPATH and library paths for binaries
+          for bin in dist/macos/*; do
+            if [[ -f "$bin" && -x "$bin" && "$bin" != *.sh ]]; then
+              echo "Fixing $bin..."
+              install_name_tool -add_rpath "@executable_path/lib" "$bin" || true
+              
+              # Get list of linked libs
+              otool -L "$bin" | grep -v "$bin" | awk '{print $1}' | while read -r linked_lib; do
+                lib_name=$(basename "$linked_lib")
+                # Check if we have this lib in our bundled lib folder (matching start of name)
+                # This handles versioned names like libxerces-c-3.3.dylib matching libxerces-c.dylib
+                if ls dist/macos/lib/"$lib_name"* 1> /dev/null 2>&1; then
+                   echo "  Remapping $linked_lib to @rpath/$lib_name"
+                   install_name_tool -change "$linked_lib" "@rpath/$lib_name" "$bin"
+                fi
+              done
+              
+              # Ad-hoc sign the binary to prevent "killed" error on arm64
+              codesign --force --deep --sign - "$bin"
+            fi
+          done
+          
+          cd dist/macos && tar -czvf ../../dci-ctp-tools-macos.tar.gz .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-binaries
+          path: dci-ctp-tools-macos.tar.gz
+
+  release:
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-binaries
+
+      - name: Download macOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-binaries
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dci-ctp-tools-linux.tar.gz
+            dci-ctp-tools-macos.tar.gz

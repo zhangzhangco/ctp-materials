@@ -1,0 +1,209 @@
+name: Generate DCP
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'test_materials/**'
+      - 'ctp_compliance_tests/tools/**'
+      - '.github/workflows/generate_dcp.yml'
+  workflow_dispatch:  # Allow manual trigger without inputs
+
+jobs:
+  setup:
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Discover Tests
+        id: set-matrix
+        run: |
+          # Run discovery script and capture JSON output
+          MATRIX_JSON=$(python3 scripts/discover_tests.py --dir test_materials)
+          echo "Discovered tests: $MATRIX_JSON"
+          # Set output for next job
+          echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+
+  generate-dcp:
+    needs: setup
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libxerces-c-dev libxml-security-c-dev autoconf automake libtool wget cmake patchelf unzip
+
+      - name: Build and Install OpenJPEG 2.5.2
+        run: |
+          wget https://github.com/uclouvain/openjpeg/archive/v2.5.2.tar.gz
+          tar -xzvf v2.5.2.tar.gz
+          cd openjpeg-2.5.2
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+          make
+          sudo make install
+          sudo ldconfig
+          cd ../..
+
+      - name: Build and Install asdcplib
+        run: |
+          git clone https://github.com/cinecert/asdcplib.git
+          cd asdcplib
+          autoreconf -if
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
+      - name: Generate DCP for ${{ matrix.name }}
+        run: |
+          # Get inputs from matrix
+          INPUT_PATH="${{ matrix.input_path }}"
+          CLEAN_NAME="${{ matrix.clean_name }}"
+          FPS="${{ matrix.fps }}"
+          
+          echo "Processing: $CLEAN_NAME"
+          echo "Input: $INPUT_PATH"
+          
+          # Generate Date
+          DATE=$(date +%Y%m%d)
+          
+          # Construct Title
+          # Structure: Title_ContentType_AspectRatio_Language_Territory_Rating_Audio_Resolution_Studio_Date_Facility_Standard_PackageType
+          # We use values from matrix or defaults
+          RES="${{ matrix.resolution }}"
+          AR="${{ matrix.aspect_ratio }}"
+          AUDIO="${{ matrix.audio }}"
+          
+          DCP_TITLE="${CLEAN_NAME}_TST_${AR}_XX-XX_INT-TD_${AUDIO}_${RES}_CTP_${DATE}_SMPTE_OV"
+          
+          echo "Generated Title: $DCP_TITLE"
+          
+          # Determine duration (default 120 frames = 5s @ 24fps)
+          # If it's a sequence, the script handles duration automatically
+          DURATION=120
+          
+          #Select script based on input type
+          INPUT_TYPE="${{ matrix.input_type }}"
+          
+          if [ "$INPUT_TYPE" == "multi_reel" ]; then
+            echo "Using multi-reel script for ${{ matrix.image_count }} images"
+            python3 scripts/generate_dcp_multi_reel.py \
+              --image "$INPUT_PATH" \
+              --output "dcp_output" \
+              --fps $FPS \
+              --title "$DCP_TITLE"
+          else
+            echo "Using single-reel script"
+            python3 scripts/generate_dcp.py \
+              --image "$INPUT_PATH" \
+              --output "dcp_output" \
+              --duration $DURATION \
+              --fps $FPS \
+              --title "$DCP_TITLE"
+          fi
+
+
+      - name: Package DCP as ZIP
+        run: |
+          cd dcp_output
+          zip -r ../DCP_${{ matrix.clean_name }}.zip .
+          cd ..
+          
+      - name: Generate Status Badge
+        if: always()
+        run: |
+          # Create status directory
+          mkdir -p dcp-status
+          
+          # Determine status color
+          if [ "${{ job.status }}" == "success" ]; then
+            STATUS="success"
+            COLOR="brightgreen"
+          else
+            STATUS="failed"
+            COLOR="red"
+          fi
+          
+          # Generate JSON status file
+          cat > dcp-status/${{ matrix.clean_name }}.json << EOF
+          {
+            "schemaVersion": 1,
+            "label": "DCP",
+            "message": "$STATUS",
+            "color": "$COLOR"
+          }
+          EOF
+          
+      - name: Upload DCP ZIP as Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dcp-${{ matrix.clean_name }}
+          path: DCP_${{ matrix.clean_name }}.zip
+          
+      - name: Upload Status Badge
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: status-${{ matrix.clean_name }}
+          path: dcp-status/${{ matrix.clean_name }}.json
+
+  release:
+    needs: generate-dcp
+    runs-on: ubuntu-22.04
+    # Run even if some generate-dcp jobs failed (but not if cancelled)
+    if: |
+      always() && 
+      github.ref == 'refs/heads/main' &&
+      !cancelled()
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all DCP artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dcp-releases
+          
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files badges
+          # Move all zip files to release-files directory
+          find dcp-releases -name "*.zip" -exec mv {} release-files/ \;
+          # Move all status JSON files to badges directory  
+          find dcp-releases -name "*.json" -exec mv {} badges/ \;
+          ls -lh release-files/
+          ls -lh badges/
+          
+      - name: Create/Update Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest-dcps
+          name: Latest DCP Packages
+          body: |
+            # Automated DCP Releases
+            
+            This release contains automatically generated DCP packages for all test materials.
+            Each DCP is packaged as a separate ZIP file.
+            
+            **Generated:** ${{ github.event.head_commit.timestamp }}
+            **Commit:** ${{ github.sha }}
+          files: |
+            release-files/*.zip
+            badges/*.json
+          fail_on_unmatched_files: false
+          prerelease: false
+          draft: false

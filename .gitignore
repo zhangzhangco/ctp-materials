@@ -1,0 +1,23 @@
+# Ignore python scripts
+*.py
+!ctp_compliance_tests/**/*.py
+!scripts/**/*.py
+
+# Ignore src directories
+src/
+*/src/
+docs
+extracted_images/
+
+# Ignore python cache
+__pycache__/
+*.pyc
+
+# Ignore system files
+.DS_Store
+
+# Ignore logs
+*.log
+ctp_packaging_config/
+
+temp_asdcplib/

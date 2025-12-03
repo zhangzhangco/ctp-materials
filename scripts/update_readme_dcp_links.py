@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""
+Script to add DCP download links to README.md tables.
+This script reads the README, finds the material tables, and adds a DCP column with links to the release.
+"""
+
+import re
+import sys
+
+def update_readme_with_dcp_links(readme_path):
+    with open(readme_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Define the release tag and base URL
+    release_tag = "latest-dcps"
+    base_url = f"https://github.com/zhangzhangco/ctp-materials/releases/download/{release_tag}"
+    
+    # Function to generate DCP filename from material name
+    def get_dcp_filename(material_name):
+        # Convert material name to the format used in the workflow
+        # e.g., "2K 2D 24 FPS Test" -> "2K-2D-24-FPS-TEST"
+        clean_name = material_name.replace(" ", "-").upper()
+        return f"DCP_{clean_name}.zip"
+    
+    # Process line by line
+    lines = content.split('\n')
+    new_lines = []
+    in_table = False
+    
+    for i, line in enumerate(lines):
+        # Detect table header
+        if re.match(r'^\|\s*#', line) or re.match(r'^\|\s*序号', line):
+            in_table = True
+            # Check if DCP column already exists
+            if '| DCP |' not in line and '| DCP' not in line:
+                # Add DCP header
+                new_line = line.rstrip() + ' DCP |'
+                new_lines.append(new_line)
+            else:
+                new_lines.append(line)
+        # Detect separator line
+        elif in_table and re.match(r'^\|\s*--', line):
+            if '| ---- |' not in line and not line.endswith('---- |'):
+                new_line = line.rstrip() + ' ---- |'
+                new_lines.append(new_line)
+            else:
+                new_lines.append(line)
+        # Detect data rows
+        elif in_table and re.match(r'^\|\s*\d+', line):
+            parts = line.split('|')
+            if len(parts) >= 6:
+                dcp_filename = get_dcp_filename(material_name)
+                dcp_url = f"{base_url}/{dcp_filename}"
+                
+                # Construct the static badge URL (blue "Download" badge)
+                badge_url = "https://img.shields.io/badge/DCP-Download-blue"
+                badge_md = f"[![DCP]({badge_url})]({dcp_url})"
+                
+                # Check if we need to add or update the link
+                # 1. No link present
+                if '[![DCP]' not in line and '[📦 DCP]' not in line:
+                    new_line = line.rstrip() + f' {badge_md} |'
+                    new_lines.append(new_line)
+                # 2. Old link present (dynamic endpoint or text link) - REPLACE IT
+                else:
+                    # Remove existing link part (simplistic approach: split by | and rebuild)
+                    # The last column is the DCP column
+                    # But wait, the line split by '|' includes empty strings at start/end
+                    # parts[0] = empty, parts[1] = #, parts[2] = Name ... parts[-2] = DCP col (if exists) or Image col
+                    
+                    # Easier: Regex replace the last column content
+                    # Or just reconstruct the line from parts
+                    
+                    # Let's reconstruct. 
+                    # parts indices: 0="", 1=#, 2=Name, 3=Section, 4=Readme, 5=Image, 6=DCP(maybe)
+                    
+                    # Rebuild the first 5 columns (indices 1 to 5)
+                    # Note: parts contains stripped strings? No, split('|') keeps whitespace.
+                    
+                    # Let's just use regex to replace the last column if it contains a DCP link
+                    import re
+                    # Pattern to match existing DCP link (either text or badge)
+                    # Matches: [![DCP]...)... | or [📦 DCP]...)... |
+                    # We want to replace everything in the last column
+                    
+                    # Actually, simplest way:
+                    # If line has DCP link, strip it off and append new one
+                    
+                    # Find the last pipe
+                    last_pipe_idx = line.rfind('|')
+                    if last_pipe_idx != -1:
+                        # Check if what's before the last pipe is the DCP column
+                        # The table structure is: | # | Name | Section | Readme | Image | DCP |
+                        # If we have a DCP link, it's in the last column.
+                        
+                        # Let's just replace the badge URL if it's the old one
+                        if 'img.shields.io/endpoint' in line:
+                            # Replace the image part of the markdown link
+                            # Old: [![DCP](https://img.shields.io/endpoint?url=...)]
+                            # New: [![DCP](https://img.shields.io/badge/DCP-Download-blue)]
+                            
+                            # Regex to match the image part: [![DCP](...endpoint...)]
+                            new_line = re.sub(r'\[!\[DCP\]\(https://img\.shields\.io/endpoint\?url=[^)]+\)\]', f'[![DCP]({badge_url})]', line)
+                            new_lines.append(new_line)
+                        else:
+                            new_lines.append(line)
+                    else:
+                        new_lines.append(line)
+            else:
+                new_lines.append(line)
+        # Detect end of table (empty line or non-table content)
+        elif in_table and line.strip() == '':
+            in_table = False
+            new_lines.append(line)
+        else:
+            new_lines.append(line)
+    
+    content = '\n'.join(new_lines)
+    
+    # Write back
+    with open(readme_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    
+    print(f"✅ Updated {readme_path} with DCP download links")
+
+if __name__ == "__main__":
+    readme_path = "README.md"
+    if len(sys.argv) > 1:
+        readme_path = sys.argv[1]
+    
+    update_readme_with_dcp_links(readme_path)
