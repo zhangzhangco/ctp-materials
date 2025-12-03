@@ -145,10 +145,23 @@ def main():
     # If sequence: convert each file i to frame_i
     # If single: convert file 0 to frame.j2c, then copy
     
+    # Determine cinema bitrate limits based on resolution and fps
+    # DCI spec: 2K @ 24fps = 250 Mbps max, 4K @ 24fps = 250 Mbps max per frame
+    # We use a safe limit to ensure compatibility with asdcplib buffer
+    if "4K" in args.title or "4k" in args.title:
+        # For 4K, use lower bitrate to fit in buffer (max ~200 Mbps)
+        # image_to_j2k doesn't have direct bitrate control, but we can use compression ratio
+        # Approximate: 4K frame = 4096x2160x3 = ~26M pixels, at 12-bit = ~39MB uncompressed
+        # Target ~3-4MB compressed (10:1 ratio is safe for DCI)
+        j2k_params = ["-p", "CPRL", "-r", "10"]  # 10:1 compression ratio
+    else:
+        # 2K uses default CPRL
+        j2k_params = ["-p", "CPRL"]
+    
     if is_sequence:
         for i, img_path in enumerate(input_files):
             dst_j2k = os.path.join(j2k_dir, f"frame_{i:06d}.j2c")
-            cmd_convert = ["image_to_j2k", "-i", img_path, "-o", dst_j2k, "-p", "CPRL"]
+            cmd_convert = ["image_to_j2k", "-i", img_path, "-o", dst_j2k] + j2k_params
             # We can silence output for bulk conversion
             try:
                 subprocess.check_call(cmd_convert, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -162,7 +175,7 @@ def main():
     else:
         # Single file conversion
         base_j2k = os.path.join(j2k_dir, "base_frame.j2c")
-        cmd_convert = ["image_to_j2k", "-i", input_files[0], "-o", base_j2k, "-p", "CPRL"]
+        cmd_convert = ["image_to_j2k", "-i", input_files[0], "-o", base_j2k] + j2k_params
         print(f"Running: {' '.join(cmd_convert)}")
         try:
             subprocess.check_call(cmd_convert)
