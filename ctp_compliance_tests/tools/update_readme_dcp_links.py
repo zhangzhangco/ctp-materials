@@ -50,17 +50,19 @@ def update_readme_with_dcp_links(readme_path):
             parts = line.split('|')
             if len(parts) >= 6:
                 # Check if DCP link already exists
-                if '[📦 DCP]' not in line:
+                if '[📦 DCP]' not in line and '![Status]' not in line:
                     material_name = parts[2].strip()
                     dcp_filename = get_dcp_filename(material_name)
                     dcp_url = f"{base_url}/{dcp_filename}"
                     
                     # Add status badge using shields.io endpoint
                     # The badge will fetch status from the JSON file in the release
+                    # Make the badge itself clickable by wrapping it in a link
                     badge_json_url = f"{base_url}/{material_name.replace(' ', '-').upper()}.json"
                     badge_url = f"https://img.shields.io/endpoint?url={badge_json_url}"
                     
-                    new_line = line.rstrip() + f' ![Status]({badge_url}) [📦 DCP]({dcp_url}) |'
+                    # Badge as link - clicking the badge downloads the DCP
+                    new_line = line.rstrip() + f' [![DCP]({badge_url})]({dcp_url}) |'
                     new_lines.append(new_line)
                 else:
                     new_lines.append(line)
