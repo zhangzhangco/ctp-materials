@@ -1,16 +1,14 @@
 name: Generate DCP
 
 on:
-  workflow_dispatch:
-    inputs:
-      test_name:
-        description: 'Name of the test to generate DCP for'
-        required: true
-        default: '2K 2D 24 FPS Test'
-      duration_frames:
-        description: 'Duration in frames'
-        required: true
-        default: '24'
+  push:
+    branches:
+      - main
+    paths:
+      - 'test_materials/**'
+      - 'ctp_compliance_tests/tools/**'
+      - '.github/workflows/generate_dcp.yml'
+  workflow_dispatch:  # Allow manual trigger without inputs
 
 jobs:
   setup:
