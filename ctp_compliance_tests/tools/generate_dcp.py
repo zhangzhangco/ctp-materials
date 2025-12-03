@@ -39,9 +39,11 @@ def get_file_size(filepath):
     return os.path.getsize(filepath)
 
 def create_xml_file(root_element, output_path):
-    xml_str = minidom.parseString(tostring(root_element)).toprettyxml(indent="  ")
-    with open(output_path, "w") as f:
-        f.write(xml_str)
+    # toprettyxml with encoding returns bytes, so we decode to write as string
+    # or write bytes. Let's write bytes to ensure encoding is respected.
+    xml_bytes = minidom.parseString(tostring(root_element)).toprettyxml(indent="  ", encoding="UTF-8")
+    with open(output_path, "wb") as f:
+        f.write(xml_bytes)
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a simple DCP from a single TIFF image.")
@@ -49,11 +51,19 @@ def main():
     parser.add_argument("--output", required=True, help="Output directory for the DCP")
     parser.add_argument("--duration", type=int, default=24, help="Duration in frames (default: 24)")
     parser.add_argument("--fps", type=int, default=24, help="Frame rate (default: 24)")
-    parser.add_argument("--title", default="TEST_DCP", help="Title of the DCP (CPL annotation text)")
+    # Default title updated to be ISDCF compliant (mock)
+    # Structure: Title_ContentType_AspectRatio_Language_Territory_Rating_Audio_Resolution_Studio_Date_Facility_Standard_PackageType
+    default_title = "TEST-DCP_TST_F_XX-XX_INT-TD_MOS_2K_CTP_20230101_SMPTE_OV"
+    parser.add_argument("--title", default=default_title, help="Title of the DCP (CPL annotation text)")
     parser.add_argument("--annotation", default="Created by CTP Tools", help="Annotation text")
     parser.add_argument("--issuer", default="CTP Tools", help="Issuer text")
 
     args = parser.parse_args()
+
+    # Update date in title if it's the default
+    if args.title == default_title:
+        today = datetime.datetime.utcnow().strftime("%Y%m%d")
+        args.title = f"TEST-DCP_TST_F_XX-XX_INT-TD_MOS_2K_CTP_{today}_SMPTE_OV"
 
     # Ensure output directory exists
     if not os.path.exists(args.output):
@@ -107,7 +117,9 @@ def main():
     
     # asdcp-test expects a directory for J2K input, not a list of files.
     # It scans the directory and sorts files alphabetically.
-    cmd_wrap = ["asdcp-test", "-c", video_mxf_path, j2k_dir]
+    # -L: Use SMPTE labels (instead of Interop)
+    # -a: Specify Asset UUID (so it matches what we put in CPL)
+    cmd_wrap = ["asdcp-test", "-L", "-a", video_mxf_uuid, "-c", video_mxf_path, j2k_dir]
     run_command(cmd_wrap)
 
     shutil.rmtree(j2k_dir)
@@ -155,7 +167,7 @@ def main():
     SubElement(main_picture, "Duration").text = str(args.duration)
     SubElement(main_picture, "Hash").text = get_file_hash_b64(video_mxf_path)
     SubElement(main_picture, "FrameRate").text = f"{args.fps} 1"
-    SubElement(main_picture, "ScreenAspectRatio").text = "1.85"
+    SubElement(main_picture, "ScreenAspectRatio").text = "190 100"
 
     cpl_name = f"CPL_{uuid.uuid4()}.xml"
     cpl_path = os.path.join(args.output, cpl_name)
