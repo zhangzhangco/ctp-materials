@@ -190,7 +190,7 @@ def main():
     # It scans the directory and sorts files alphabetically.
     # -L: Use SMPTE labels (instead of Interop)
     # -a: Specify Asset UUID (so it matches what we put in CPL)
-    cmd_wrap = ["asdcp-test", "-L", "-a", video_mxf_uuid, "-c", video_mxf_path, j2k_dir]
+    cmd_wrap = ["asdcp-test", "-L", "-a", str(video_mxf_uuid), "-c", video_mxf_path, j2k_dir]
     run_command(cmd_wrap)
 
     shutil.rmtree(j2k_dir)
