@@ -62,6 +62,56 @@ def create_xml_file(root_element, output_path):
     with open(output_path, "wb") as f:
         f.write(dom.toprettyxml(indent="  ", encoding="UTF-8"))
 
+def sort_images(files):
+    """
+    Sort images based on naming patterns:
+    1. If filenames contain "step" or "Step", sort by step number in ascending order
+    2. If 12 color files (RGBCMY x2), sort by RGBCMY order (batch 1, then batch 2)
+    3. Otherwise, use default alphabetical sorting
+    """
+    import re
+    
+    # Check if this is a step-based sequence
+    step_pattern = re.compile(r'[Ss]tep[-_](\d+)', re.IGNORECASE)
+    has_steps = any(step_pattern.search(os.path.basename(f)) for f in files)
+    
+    if has_steps:
+        # Sort by step number
+        def step_key(filepath):
+            basename = os.path.basename(filepath)
+            match = step_pattern.search(basename)
+            if match:
+                return int(match.group(1))
+            return 0
+        
+        return sorted(files, key=step_key)
+    
+    # Check if this is a 12-color test (RGBCMY x 2 batches)
+    color_pattern = re.compile(r'(Red|Green|Blue|Cyan|Magenta|Yellow)-([12])', re.IGNORECASE)
+    color_matches = [color_pattern.search(os.path.basename(f)) for f in files]
+    
+    if len(files) == 12 and all(color_matches):
+        # Define RGBCMY order
+        color_order = {
+            'red': 0, 'green': 1, 'blue': 2, 
+            'cyan': 3, 'magenta': 4, 'yellow': 5
+        }
+        
+        def color_key(filepath):
+            basename = os.path.basename(filepath)
+            match = color_pattern.search(basename)
+            if match:
+                color_name = match.group(1).lower()
+                batch_num = int(match.group(2))
+                # Sort by batch first, then by color order within batch
+                return (batch_num, color_order.get(color_name, 99))
+            return (99, 99)
+        
+        return sorted(files, key=color_key)
+    
+    # Default alphabetical sorting
+    return sorted(files)
+
 def main():
     parser = argparse.ArgumentParser(description="Generate multi-reel DCP from multiple images")
     parser.add_argument("--image", required=True, help="Path to ZIP file or directory containing images")
@@ -121,8 +171,8 @@ def main():
     if not input_files:
         print("Error: No TIFF files found in ZIP.")
         sys.exit(1)
-        
-    input_files.sort()
+    
+    input_files = sort_images(input_files)
     
     print(f"Found {len(input_files)} images - creating {len(input_files)} reels")
     

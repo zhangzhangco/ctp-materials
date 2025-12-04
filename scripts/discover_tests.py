@@ -91,8 +91,6 @@ def discover_tests(test_materials_dir):
                 # Look for TIFFs
                 tiffs = [f for f in os.listdir(item_path) if f.lower().endswith('.tiff') or f.lower().endswith('.tif')]
                 if tiffs:
-                    # Sort to ensure sequence order
-                    tiffs.sort()
                     image_count = len(tiffs)
                     if len(tiffs) >= 2:
                         # Multiple TIFFs: treat as multi-reel (each image = 5 sec)
