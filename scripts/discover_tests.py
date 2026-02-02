@@ -46,6 +46,12 @@ def parse_metadata(dirname):
         # ISDCF: F (1.85), S (2.39), C (Full Container 1.90)
         metadata["aspect_ratio"] = "C"
 
+    # HDR Detection - check if content is HDR (uses ST 2084 / PQ EOTF)
+    if "HDR" in dirname.upper():
+        metadata["hdr"] = True
+    else:
+        metadata["hdr"] = False
+
     return metadata
 
 def discover_tests(test_materials_dir):
@@ -123,7 +129,8 @@ def discover_tests(test_materials_dir):
                     "resolution": metadata["resolution"],
                     "audio": metadata["audio"],
                     "clean_name": clean_name,
-                    "aspect_ratio": metadata["aspect_ratio"]
+                    "aspect_ratio": metadata["aspect_ratio"],
+                    "hdr": metadata["hdr"]
                 }
                 tests.append(test_info)
 

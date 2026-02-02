@@ -95,6 +95,14 @@ jobs:
           
           # 根据输入类型选择脚本
           INPUT_TYPE="${{ matrix.input_type }}"
+          IS_HDR="${{ matrix.hdr }}"
+          
+          # 构建HDR参数
+          HDR_FLAG=""
+          if [ "$IS_HDR" == "true" ]; then
+            HDR_FLAG="--hdr"
+            echo "HDR content detected, enabling HDR metadata (ST 2084 / PQ EOTF)"
+          fi
           
           if [ "$INPUT_TYPE" == "multi_reel" ]; then
             echo "Using multi-reel script for ${{ matrix.image_count }} images"
@@ -102,7 +110,8 @@ jobs:
               --image "$INPUT_PATH" \
               --output "dcp_output" \
               --fps $FPS \
-              --title "$DCP_TITLE"
+              --title "$DCP_TITLE" \
+              $HDR_FLAG
           else
             echo "Using single-reel script"
             python3 scripts/generate_dcp.py \
@@ -110,7 +119,8 @@ jobs:
               --output "dcp_output" \
               --duration $DURATION \
               --fps $FPS \
-              --title "$DCP_TITLE"
+              --title "$DCP_TITLE" \
+              $HDR_FLAG
           fi
 
 

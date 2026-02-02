@@ -38,6 +38,16 @@ The DCPs provided in the table below are **automatically generated** using our C
 * If a DCP fails to load or play, please refer to the [DCP Generation Guide](#dcp-packaging-guide) to manually package the TIFF materials using compliant tools (e.g., easyDCP, OpenDCP, or `asdcp-test`).
 * The status badges indicate whether the *generation process* succeeded, not whether the DCP is compliant.
 
+### HDR Metadata Support
+
+Our DCP generation scripts now support **HDR (High Dynamic Range)** content with proper metadata:
+* **Automatic Detection:** Materials with "HDR" in their directory name are automatically detected.
+* **CPL Extension Metadata:** For HDR content, the CPL includes an ExtensionMetadataList with the DCI HDR namespace (`http://www.dcimovies.com/schemas/2018/HDR-Metadata`), specifying **ST 2084 (PQ)** as the EOTF.
+* **Manual Usage:** Use the `--hdr` flag when running the generation scripts manually:
+  ```bash
+  python3 scripts/generate_dcp.py --image input.tiff --output dcp_output --hdr
+  ```
+
 ### Material List
 
 | #  | Material Name                                   | CTP Section            | README                                                                                    | Image                                                                                                                                | DCP |

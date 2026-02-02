@@ -72,6 +72,7 @@ def main():
     parser.add_argument("--title", default=default_title, help="Title of the DCP (CPL annotation text)")
     parser.add_argument("--annotation", default="Created by CTP Tools", help="Annotation text")
     parser.add_argument("--issuer", default="CTP Tools", help="Issuer text")
+    parser.add_argument("--hdr", action="store_true", help="Enable HDR metadata (ST 2084 / PQ EOTF)")
 
     args = parser.parse_args()
 
@@ -276,6 +277,22 @@ def main():
     SubElement(main_picture, "Hash").text = get_file_hash_b64(video_mxf_path)
     SubElement(main_picture, "FrameRate").text = f"{args.fps} 1"
     SubElement(main_picture, "ScreenAspectRatio").text = "190 100"
+
+    # Add HDR Metadata Extension if HDR flag is set
+    if args.hdr:
+        print("Adding HDR metadata (ST 2084 / PQ EOTF)...")
+        # Create ExtensionMetadataList for HDR
+        ext_meta_list = SubElement(cpl, "ExtensionMetadataList")
+        
+        # DCI HDR Metadata Extension
+        ext_meta = SubElement(ext_meta_list, "ExtensionMetadata", {
+            "scope": "http://www.dcimovies.com/schemas/2018/HDR-Metadata"
+        })
+        SubElement(ext_meta, "Name").text = "Image Encoding Parameters"
+        ext_property_list = SubElement(ext_meta, "PropertyList")
+        eotf_prop = SubElement(ext_property_list, "Property")
+        SubElement(eotf_prop, "Name").text = "EOTF"
+        SubElement(eotf_prop, "Value").text = "ST 2084"
 
     cpl_name = f"CPL_{uuid.uuid4()}.xml"
     cpl_path = os.path.join(args.output, cpl_name)
