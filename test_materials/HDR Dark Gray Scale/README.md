@@ -7,7 +7,10 @@
 验证HDR轮廓（Contouring）表现。
 
 ## 3. 特性 (Characteristics)
-HDR Picture Track File containing five seconds (120 frames) of a chart showing all gray step values in Table A.2.293. This is followed by the step values, each as a full frame with a duration of 50 s.
+结构同 DCI HDR Gray Steps：包含5秒（120帧）的汇总图，展示表A.2.293中的所有灰阶值；随后每个灰阶以全屏展示，单档持续50秒。
+包含10个暗部灰阶梯级。
+* 目标亮度覆盖约0.01–1.0 cd/m²（以PQ EOTF映射至光度值），用于评估低亮区的量化和映射精度。
+* 梯级在代码值上等间隔，但在感知域（JND）接近线性，以便突出任何压缩或断层伪影。
 
 ## 4. 验证方法 (Verification)
 **硬件测量：** 测量每个全屏灰色色块的亮度，计算二阶近似导数。
